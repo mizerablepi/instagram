@@ -15,7 +15,11 @@ const AccountLogin = () => {
   };
 
   const closeAlert = () => {
-    setAlertConfig({ ...alertConfig, show: false });
+    if (otpVerificationStatus === 'approved') {
+      handleBackToLogin();
+    } else {
+      setAlertConfig({ ...alertConfig, show: false });
+    }
   };
 
   const handleChange = (e) => {
@@ -128,8 +132,10 @@ const AccountLogin = () => {
   const handleBackToLogin = () => {
     setShowOtpScreen(false);
     setOtp('');
+    setFormData({ password: '' });
     setTrustDevice(false);
     setOtpVerificationStatus('idle');
+    setVerificationStatus('idle');
     setAlertConfig({ show: false, title: '', message: '' });
   };
 
@@ -141,7 +147,7 @@ const AccountLogin = () => {
   // If OTP screen should be shown
   if (showOtpScreen) {
     return (
-      <div className="min-h-screen bg-[#0a1929] text-white flex flex-col font-sans">
+      <div className="min-h-screen bg-[#1C2A33] text-white flex flex-col font-sans">
         {/* Back Button */}
         <button 
           onClick={handleBackToLogin}
