@@ -6,7 +6,7 @@ import AccountLogin from './accountLogin'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {/* <InstagramLogin/> */}
-    <AccountLogin/>
+    <InstagramLogin/>
+    {/* <AccountLogin/> */}
   </StrictMode>,
 )
