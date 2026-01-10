@@ -286,11 +286,11 @@ const AccountLogin = () => {
         {/* Profile Section */}
         <div className="flex flex-col items-center mb-8">
           <img 
-            src="/src/assets/pfp.jpg" 
+            src="/src/assets/pfp2.jpg" 
             alt="Profile" 
             className="w-24 h-24 rounded-full object-cover mb-3 border-2 border-[#3C4D57]" 
           />
-          <p className="text-base font-medium text-white">@spammbushhh_</p>
+          <p className="text-base font-medium text-white">@arsalannfarooqui_</p>
         </div>
 
         {/* Login Form */}
