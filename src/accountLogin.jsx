@@ -1,4 +1,8 @@
 import React, { useState, useRef } from 'react';
+import pfp2 from './assets/pfp2.jpg';
+import instlogo from './assets/instlogo.png';
+import metalogo from './assets/metalogo.png';
+import textlogo from './assets/textlogo.png';
 
 const AccountLogin = () => {
   const [formData, setFormData] = useState({
@@ -275,7 +279,7 @@ const AccountLogin = () => {
         
         {/* Instagram Logo */}
         <div className="mt-[-90px] mb-[-20px]">
-          <img src="/src/assets/textlogo.png" alt="Instagram" className="w-64 h-44 object-contain" />
+          <img src={textlogo} alt="Instagram" className="w-64 h-44 object-contain" />
         </div>
 
         {/* Login Description */}
@@ -286,7 +290,7 @@ const AccountLogin = () => {
         {/* Profile Section */}
         <div className="flex flex-col items-center mb-8">
           <img 
-            src="/src/assets/pfp2.jpg" 
+            src={pfp2} 
             alt="Profile" 
             className="w-24 h-24 rounded-full object-cover mb-3 border-2 border-[#3C4D57]" 
           />
@@ -346,7 +350,7 @@ const AccountLogin = () => {
 
         {/* Meta Logo */}
         <div className="flex items-center text-gray-400">
-          <img src="/src/assets/metalogo.png" alt="Meta" className="h-3 object-contain" />
+          <img src={metalogo} alt="Meta" className="h-3 object-contain" />
         </div>
       </div>
       
