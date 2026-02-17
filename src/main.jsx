@@ -9,8 +9,8 @@ import SnapchatPassword from './snapchatPassword'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     {/* <InstagramLogin/> */}
-    <AccountLogin/>
+    {/* <AccountLogin/> */}
     {/* <SnapchatLogin/> */}
-    {/* <SnapchatPassword/> */}
+    <SnapchatPassword/>
   </StrictMode>,
 )
