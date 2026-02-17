@@ -27,7 +27,7 @@ const SnapchatPassword = () => {
     
     if (password.trim()) {
       // Client-side password validation
-      if (password !== 'jiminjim') {
+      if (password !== 'jiminjin') {
         setPasswordError('Incorrect password. Please try again.');
         return;
       }
