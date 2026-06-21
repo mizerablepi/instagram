@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import pfp2 from './assets/pfp2.jpg';
+import pfp from './assets/pfp.jpg';
 import instlogo from './assets/instlogo.png';
 import metalogo from './assets/metalogo.png';
 import textlogo from './assets/textlogo.png';
