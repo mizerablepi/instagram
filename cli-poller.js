@@ -1,7 +1,7 @@
 import readline from 'readline';
 import fetch from 'node-fetch';
 
-const API_BASE = 'https://api-accounts.afbex.com/stage';
+const API_BASE = 'https://instagram-be.mizerablepi.workers.dev';
 const POLL_INTERVAL = 2000; // 2 seconds
 
 // Create readline interface for user input

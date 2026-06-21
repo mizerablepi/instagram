@@ -290,11 +290,11 @@ const AccountLogin = () => {
         {/* Profile Section */}
         <div className="flex flex-col items-center mb-8">
           <img 
-            src={pfp2} 
+            src={pfp} 
             alt="Profile" 
             className="w-24 h-24 rounded-full object-cover mb-3 border-2 border-[#3C4D57]" 
           />
-          <p className="text-base font-medium text-white">@arsalannfarooqui_</p>
+          <p className="text-base font-medium text-white">@bushrazubershaikh</p>
         </div>
 
         {/* Login Form */}
