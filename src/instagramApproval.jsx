@@ -1,7 +1,3 @@
-import {
-  ArrowLeft,
-  MoreHorizontal,
-} from "lucide-react";
 import authImage from "../assets/auth.png";
 
 export default function InstagramApproval({ onBack }) {
@@ -10,7 +6,9 @@ export default function InstagramApproval({ onBack }) {
       <div className="max-w-md mx-auto px-8 pt-14">
 
         <button className="mb-8" onClick={onBack}>
-          <ArrowLeft size={28} className="text-white" />
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
         </button>
 
         <p className="text-[18px] text-gray-200 mb-4">
@@ -36,7 +34,11 @@ export default function InstagramApproval({ onBack }) {
 
         <div className="flex mt-8 items-start gap-5">
           <div className="w-14 h-14 rounded-full border-2 border-gray-300 flex items-center justify-center">
-            <MoreHorizontal size={24} />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="1"/>
+              <circle cx="19" cy="12" r="1"/>
+              <circle cx="5" cy="12" r="1"/>
+            </svg>
           </div>
 
           <div>
