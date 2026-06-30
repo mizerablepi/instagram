@@ -1,4 +1,4 @@
-import authImage from "../assets/auth.png";
+import authImage from "./assets/auth.png";
 
 export default function InstagramApproval({ onBack }) {
   return (
