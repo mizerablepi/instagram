@@ -4,12 +4,12 @@ import {
 } from "lucide-react";
 import authImage from "../assets/auth.png";
 
-export default function InstagramApproval() {
+export default function InstagramApproval({ onBack }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1f2735] via-[#223a49] to-[#153f3b] text-white">
       <div className="max-w-md mx-auto px-8 pt-14">
 
-        <button className="mb-8">
+        <button className="mb-8" onClick={onBack}>
           <ArrowLeft size={28} className="text-white" />
         </button>
 
@@ -50,7 +50,7 @@ export default function InstagramApproval() {
           </div>
         </div>
 
-        <button className="mt-10 w-full h-16 rounded-full border border-gray-500 bg-transparent text-white text-2xl font-medium hover:bg-white/5 transition">
+        <button onClick={onBack} className="mt-10 w-full h-16 rounded-full border border-gray-500 bg-transparent text-white text-2xl font-medium hover:bg-white/5 transition">
           Try another way
         </button>
 

