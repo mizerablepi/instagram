@@ -11,11 +11,7 @@ export default function InstagramApproval({ onBack }) {
           </svg>
         </button>
 
-        <p className="text-sm text-gray-200 mb-4">
-          • Instagram
-        </p>
-
-        <h1 className="text-3xl leading-tight font-bold tracking-tight">
+        <h1 className="text-2xl leading-tight font-bold tracking-tight">
           Check your notifications on another device
         </h1>
 
